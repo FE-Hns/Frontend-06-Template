@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicTacToe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: darkgreen;
+            line-height: 50px;
+            text-align: center;
+            border: 1px solid #fff;
+            vertical-align: middle;
+            display: inline-block;
+            font-size: 26px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="board"></div>
+    <script>
+        // 0 空 1 × 2 ○
+        let pattern = [
+            [1, 2, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+        ]
+        let board = document.getElementById("board")
+        let color = 1
+        // 绘制棋盘
+        function drawChess() {
+            board.innerHTML = ""
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    let cell = document.createElement("div")
+                    cell.classList.add("cell")
+                    // 将if条件判断改写为三目运算符
+                    cell.innerText =
+                        pattern[y][x] == 1 ? "❌" :
+                        pattern[y][x] == 2 ? "⭕" : ""
+                    board.appendChild(cell)
+                    // 走棋判断
+                    cell.addEventListener("click", () => playChess(y, x))
+                }
+                board.appendChild(document.createElement("br"))
+            }
+        }
+
+        // 走棋
+        function playChess(y, x) {
+            if (pattern[y][x] == 0) {
+                pattern[y][x] = color
+                if (checkWin()) {
+                    console.log(color == 1 ? '❌' + 'win' : '⭕' + 'win')
+                }
+                color = 3 - color
+                drawChess()
+            }
+        }
+        // 判断输赢
+        function checkWin() {
+            // 一行数据都是同一颜色
+            for (let y = 0; y < 3; y++) {
+                let win = true
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[y][x] != color) {
+                        win = false
+                        break
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
+            // 一列数据都是同一颜色
+            // 对角线1
+            // 对角线2
+        }
+        // 初始化调用
+        drawChess()
+    </script>
+</body>
+
+</html>
