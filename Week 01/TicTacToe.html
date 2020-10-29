@@ -28,14 +28,17 @@
 <body>
     <div id="board"></div>
     <script>
-        // 0 空 1 × 2 ○
+        // 0 空 
+        // 1 ❌
+        // 2 ⭕
         let pattern = [
-            [1, 2, 0],
+            [0, 0, 0],
             [0, 0, 0],
             [0, 0, 0],
         ]
         let board = document.getElementById("board")
         let color = 1
+
         // 绘制棋盘
         function drawChess() {
             board.innerHTML = ""
@@ -59,15 +62,19 @@
         function playChess(y, x) {
             if (pattern[y][x] == 0) {
                 pattern[y][x] = color
-                if (checkWin()) {
-                    console.log(color == 1 ? '❌' + 'win' : '⭕' + 'win')
+                if (checkWin(pattern, color)) {
+                    console.log(color == 1 ? '❌' + ' is winner!' : '⭕' + ' is winner!')
                 }
                 color = 3 - color
                 drawChess()
+                if (willWin(pattern,color)) {
+                    console.log(color == 1 ? '❌' + ' will win!' : '⭕' + ' will win!')
+                }
             }
         }
+
         // 判断输赢
-        function checkWin() {
+        function checkWin(pattern,color) {
             // 一行数据都是同一颜色
             for (let y = 0; y < 3; y++) {
                 let win = true
@@ -82,9 +89,69 @@
                 }
             }
             // 一列数据都是同一颜色
-            // 对角线1
-            // 对角线2
+            for (let y = 0; y < 3; y++) {
+                let win = true
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[x][y] != color) {
+                        win = false
+                        break
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
+            // 对角线1 特征在于x y坐标相同 [0,0] [1,1] [2,2]
+            {
+                let win = true
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[x][x] != color) {
+                        win = false
+                        break
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
+            // 对角线2 特征 [0,2] [1,1] [2,0] 特征是 x+y = 2
+            {
+                let win = true
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[x][2-x] != color) {
+                        win = false
+                        break
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
         }
+
+        // 克隆方法
+        function clone(p) {
+            return JSON.parse(JSON.stringify(p))
+        }
+
+        // AI测算哪一方可以赢，模拟下棋
+        // 故而需要克隆出一份
+        function willWin(pattern,color) {
+            for (let y = 0; y < 3; y++) {;
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[y][x]) {
+                        continue
+                    }
+                    let tmp = clone(pattern)
+                    tmp[y][x] = color
+                    if (checkWin(tmp, color)) {
+                        return true
+                    }
+                }
+            }
+            return false
+        }
+
         // 初始化调用
         drawChess()
     </script>
