@@ -67,9 +67,10 @@
                 }
                 color = 3 - color
                 drawChess()
-                if (willWin(pattern,color)) {
-                    console.log(color == 1 ? '❌' + ' will win!' : '⭕' + ' will win!')
-                }
+                // if (willWin(pattern,color)) {
+                //     console.log(color == 1 ? '❌' + ' will win!' : '⭕' + ' will win!')
+                // }
+                console.log(bestChoice(pattern,color))
             }
         }
 
@@ -145,13 +146,49 @@
                     let tmp = clone(pattern)
                     tmp[y][x] = color
                     if (checkWin(tmp, color)) {
-                        return true
+                        return [x,y]
                     }
                 }
             }
-            return false
+            return null
         }
 
+        // 最优解
+        function bestChoice(pattern,color) {
+            let p
+            // 如果已经赢了
+            if (p = willWin(pattern,color)) {
+                return {
+                    point: p,
+                    result: 1
+                }
+            }
+            let point = null
+            let result = -2
+            // 再做遍历
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    // 如果已经有了棋子，那就跳过
+                    if (pattern[y][x]) {
+                        continue
+                    }
+                    let tmp = clone(pattern)
+                    tmp[y][x] = color
+                    // 看看对方的最优解，对方的最优解就是我们最差的解法
+                    let r = bestChoice(tmp, 3 - color).result
+
+                    if (-r > result) {
+                        result = -r
+                        point = [y,x]
+                    }
+                }
+                
+            }
+            return {
+                point: point,
+                result: point ? result : 0
+            }
+        }
         // 初始化调用
         drawChess()
     </script>
