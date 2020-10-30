@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TicTacToe完美AI版本</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .cell {
+            width: 50px;
+            height: 50px;
+            background-color: darkgreen;
+            line-height: 50px;
+            text-align: center;
+            border: 1px solid #fff;
+            vertical-align: middle;
+            display: inline-block;
+            font-size: 26px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="board"></div>
+    <script>
+        // 这里我仍然采用二维数组表示棋盘
+        // 因为二维数组更好理解
+        // 0 空白
+        // 1 ❌
+        // 2 ⭕
+        let pattern = [
+            [0, 1 ,0],
+            [0, 2 ,0],
+            [0, 0 ,0],
+        ]
+        // 获取棋盘节点
+        let board = document.getElementById("board")
+        // 默认让❌先行
+        let color = 1
+        // 绘制棋盘
+        function show() {
+            // 每次绘制都需要重新清空棋盘
+            board.innerHTML = ""
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    // 创建每个单元格
+                    let cell = document.createElement("div")
+                    // 添加类
+                    cell.classList.add("cell")
+                    // 绘制棋子
+                    if (pattern[y][x] == 1) {
+                        cell.innerText = "❌"
+                    }
+                    if (pattern[y][x] == 2) {
+                        cell.innerText = "⭕"
+                    }
+                    cell.addEventListener("click",() => userMove(y,x),{once: true})
+                    // 插入节点
+                    board.appendChild(cell)
+                }                
+                // 每隔三个换行处理
+                board.appendChild(document.createElement("br"))
+            }
+        }
+
+        // 用户下棋
+        function userMove(y,x) {
+            // 是否为空白，只有空白才能落子
+            if (pattern[y][x] === 0) {
+                pattern[y][x] = color
+                color = 3 - color
+                show()
+            }
+        }
+
+        // 检查输赢
+        function check() {
+            // 三子在一行
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    
+                }                
+            }
+            // 三子在一列
+            // 三子在对角线1 x,y 坐标一致的对角线 [0,0] [1,1] [2,2]
+            // 三子在对角线2 x,y 坐标为 [2,0] [1,1] [0,2]
+        }
+
+        // 起始渲染
+        show()
+    </script>
+</body>
+
+</html>
