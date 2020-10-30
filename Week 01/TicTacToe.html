@@ -177,7 +177,7 @@
                     // 看看对方的最优解，对方的最优解就是我们最差的解法
                     let r = bestChoice(tmp, 3 - color).result
 
-                    if (-r > result) {
+                    if (-r >= result) {
                         result = -r
                         point = [y,x]
                     }

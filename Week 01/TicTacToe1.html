@@ -34,9 +34,9 @@
         // 1 ❌
         // 2 ⭕
         let pattern = [
-            [0, 1 ,0],
-            [0, 2 ,0],
-            [0, 0 ,0],
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
         ]
         // 获取棋盘节点
         let board = document.getElementById("board")
@@ -53,44 +53,170 @@
                     // 添加类
                     cell.classList.add("cell")
                     // 绘制棋子
-                    if (pattern[y][x] == 1) {
+                    if (pattern[y * 3 + x] == 1) {
                         cell.innerText = "❌"
                     }
-                    if (pattern[y][x] == 2) {
+                    if (pattern[y * 3 + x] == 2) {
                         cell.innerText = "⭕"
                     }
-                    cell.addEventListener("click",() => userMove(y,x),{once: true})
+                    cell.addEventListener("click", () => userMove(y, x))
                     // 插入节点
                     board.appendChild(cell)
-                }                
+                }
                 // 每隔三个换行处理
                 board.appendChild(document.createElement("br"))
             }
         }
 
         // 用户下棋
-        function userMove(y,x) {
+        function userMove(y, x) {
             // 是否为空白，只有空白才能落子
-            if (pattern[y][x] === 0) {
-                pattern[y][x] = color
+            if (pattern[y * 3 + x] === 0) {
+                pattern[y * 3 + x] = color
+                if (check(pattern, color)) {
+                    alert(color == 1 ? '❌ is winner' : "⭕ is winner")
+                }
                 color = 3 - color
                 show()
+                computerMove()
+                // if (willWin(pattern,color)) {
+                //     console.log(color == 1 ? '❌ will win': "⭕ wii win")
+                // }
+                // console.log(bestChoice(pattern, color))
             }
         }
 
+        // 电脑走棋
+        function computerMove() {
+            let choice = bestChoice(pattern, color)
+            if (choice.point) {
+                pattern[choice.point[0] * 3 + choice.point[1]] = color
+            }
+            if (check(pattern, color)) {
+                alert(color == 1 ? '❌ is winner' : "⭕ is winner")
+            }
+            color = 3 - color
+            show()
+        }
         // 检查输赢
-        function check() {
-            // 三子在一行
+        function check(pattern, color) {
+            // 三子在一行 y坐标一致
             for (let y = 0; y < 3; y++) {
+                let win = true
                 for (let x = 0; x < 3; x++) {
-                    
-                }                
+                    // 只要当前行有一个不相同那就没赢，跳过当前循环
+                    if (pattern[y * 3 + x] != color) {
+                        win = false
+                        break
+                    }
+                }
+                // 直到找到一个当前行所有子儿颜色一致
+                if (win) {
+                    return true
+                }
             }
             // 三子在一列
-            // 三子在对角线1 x,y 坐标一致的对角线 [0,0] [1,1] [2,2]
+            for (let y = 0; y < 3; y++) {
+                let win = true
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[x * 3 + y] != color) {
+                        win = false
+                        break
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
+            // 三子在对角线1 x,y 坐标一致的对角线 [0] [4] [8]
+            {
+                let win = true
+                for (let i = 0; i < 3; i++) {
+                    if (pattern[i * 3 + i] != color) {
+                        win = false
+                        break
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
             // 三子在对角线2 x,y 坐标为 [2,0] [1,1] [0,2]
+            {
+                let win = true
+                for (let i = 0; i < 3; i++) {
+                    if (pattern[i * 3 + 2 - i] != color) {
+                        win = false
+                    }
+                }
+                if (win) {
+                    return true
+                }
+            }
         }
 
+        // 一个克隆的方法
+        function clone(pattern) {
+            return JSON.parse(JSON.stringify(pattern))
+        }
+        // 模拟走棋，看看谁能赢
+        function willWin(pattern, color) {
+            for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    // 如果当前有子儿，那么就跳过本轮循环
+                    if (pattern[y * 3 + x]) {
+                        continue
+                    }
+                    // 为了不真的改变原数组，我们需要克隆一份数据
+                    let tmp = clone(pattern)
+                    // 模拟走一步
+                    tmp[y * 3 + x] = color
+                    // 再利用check函数检查是不是赢了
+                    if (check(tmp, color)) {
+                        return [y, x]
+                    }
+                }
+
+            }
+            return null
+        }
+
+        // 找最优解法
+        // -1输 
+        // 0和棋 
+        // 1赢
+        function bestChoice(pattern, color) {
+            let result = -1
+            let point = willWin(pattern, color)
+            if (point) {
+                return {
+                    point: point,
+                    result: 1
+                }
+            }
+            // 否则的话就模拟下棋找最优解
+            outer: for (let y = 0; y < 3; y++) {
+                for (let x = 0; x < 3; x++) {
+                    if (pattern[y * 3 + x]) {
+                        continue
+                    }
+                    let tmp = clone(pattern)
+                    tmp[y * 3 + x] = color
+                    let oppositeResult = bestChoice(tmp, 3 - color).result
+                    if (-oppositeResult >= result) {
+                        result = -oppositeResult
+                        point = [y, x]
+                    }
+                    if (result == 1) {
+                        break outer;
+                    }
+                }
+            }
+            return {
+                point: point,
+                result: point ? result : 0
+            }
+        }
         // 起始渲染
         show()
     </script>
