@@ -9,62 +9,68 @@
         .cell {
             width: 6px;
             height: 6px;
-            display: inline-block;
+            border:1px solid #fff;
             background-color: gray;
-            vertical-align: top;
-            border-right: 1px solid #fff;
-            border-bottom: 1px solid #fff;
-            line-height: 7px;
+            line-height: 8px;
+            flex: 1 0 auto;
         }
         #container {
-            width: 701px;
-            font-size: 0;
-            line-height: 7px;
+            width: 801px;
+            flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
         }
     </style>
 </head>
 
 <body>
     <div id="container"></div>
+    <button id="save">保存</button>
     <script>
         let container = document.getElementById("container")
-        let pattern = Array(10000).fill(0)
+        let btn = document.getElementById("save")
+        let mousedown = false
+        let clear = false
+        let map = window.localStorage.getItem("map") ? JSON.parse(window.localStorage.getItem("map")) : Array(10000).fill(0)
         for (let y = 0; y < 100; y++) {
             for (let x = 0; x < 100; x++) {
                 let cell = document.createElement("div")
                 cell.classList.add("cell")
-                if (pattern[100 * y + x] == 1) {
+                // 如果等于1那么就渲染出墙，给背景色设置为black
+                if (map[y*100 + x] == 1) {
                     cell.style.backgroundColor = "black"
                 }
-                cell.addEventListener("mousemove",function () {
-                    // 鼠标左键按下，给单元格上色
+                cell.addEventListener("mousemove",(e) => {
                     if (mousedown) {
-                        if (clear) {
+                        if(clear) {
                             cell.style.backgroundColor = ""
-                            pattern[y*100 + x] = 0
+                            map[y*100 + x] = 0
                         } else {
                             cell.style.backgroundColor = "black"
-                            pattern[y*100 + x] = 1
+                            map[y*100 + x] = 1
                         }
                     }
                 })
                 container.appendChild(cell)
-            }
+            }            
         }
-        let mousedown = false
-        let clear = false
-        container.addEventListener("mousedown",function (e) {
+        // 鼠标按下事件
+        document.addEventListener("mousedown",(e) => {
             mousedown = true
-            // 代表按下了右键，准备清除数据
-            if (e.which == 3) {
-                clear = true
-            }
+            e.which == 3 && (clear = true)
         })
-        container.addEventListener("mouseup",function (e) {
+        // 鼠标抬起事件
+        document.addEventListener("mouseup",(e) => {
             mousedown = false
             clear = false
         })
+        // 阻止默认行为
         document.addEventListener("contextmenu",(e) => e.preventDefault())
+        // 保存功能
+        btn.addEventListener("click",(e) => {
+            window.localStorage.setItem("map",JSON.stringify(map))
+        })
     </script>
 </body>
 

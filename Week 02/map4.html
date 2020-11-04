@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>map4</title>
+    <style>
+        .cell {
+            width: 6px;
+            height: 6px;
+            border: 1px solid #fff;
+            background-color: gray;
+            line-height: 8px;
+            flex: 1 0 auto;
+        }
+        #container {
+            width: 801px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <button id="save">保存</button>
+    <script>
+        let container = document.getElementById("container")
+        let saveBtn = document.getElementById("save")
+        let map = window.localStorage.getItem("map") ? JSON.parse(window.localStorage.getItem("map")) : Array(10000).fill(0)
+        let mousedown = false
+        let clear = false
+
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                let cell = document.createElement("div")
+                cell.classList.add("cell")
+                // 画墙
+                if (map[y * 100 + x] == 1) {
+                    cell.style.backgroundColor = "black"
+                }
+                // 鼠标滑过事件监听
+                cell.addEventListener("mousemove", (e) => {
+                    if (mousedown) {
+                        // 右键滑过
+                        if (clear) {
+                            cell.style.backgroundColor = ""
+                            map[y * 100 + x] = 0
+                        } else { // 鼠标左键滑过
+                            cell.style.backgroundColor = "black"
+                            map[y * 100 + x] = 1
+                        }
+                    }
+                })
+                container.appendChild(cell)
+            }
+        }
+
+        // 鼠标按下
+        document.addEventListener("mousedown", (e) => {
+            mousedown = true
+            if (e.which == 3) {
+                clear = true
+            }
+        })
+
+        // 鼠标抬起
+        document.addEventListener("mouseup", (e) => {
+            mousedown = false
+            clear = false
+        })
+
+        // 阻止右键默认行为
+        document.addEventListener("contextmenu", (e) => e.preventDefault())
+
+        // 延迟函数
+        function sleep(duration) {
+            return new Promise((resolve,reject) => {
+                setTimeout(resolve, duration);
+            })
+        }
+
+        // 寻找路径
+        // 寻找路径思路在于
+        // 广度搜索，广度搜索核心在于队列
+        // 每次取出第一项，然后根据第一项扩展到周围
+        // 然后以此类推
+
+        // 那么如何才能找到到达终点的路径呢？
+        async function path(map, start, end) {
+            // 核心队列
+            let queue = [start]
+
+            // 在插入点的过程中
+            // 有几点需要考虑
+            // 是否到了边界
+            // 要插入的点是不是墙
+            // 已经插入的点
+            async function insert(x, y) {
+                // 边界问题
+                if (x < 0 || x >= 100 || y < 0 || y >= 100) {
+                    return;
+                }
+                // 墙和插入的点，在map上不为0
+                if (map[y*100 + x]) {
+                    return;
+                }
+                // 给寻路的过程上颜色
+                container.children[y*100 + x].style.backgroundColor = "lightgreen"
+                // 打标记
+                map[y*100 + x] = 2
+                // 满足条件的点，就可以推入到队列中
+                queue.push([x,y])
+            }
+
+            // 遍历队列
+            while (queue.length) {
+                let [x, y] = queue.shift()
+                // 判断是否到了终点
+                if (x == end[0] && y == end[1]) {
+                    return true
+                }
+                // 插入周围的点
+                insert(x, y - 1) // 上
+                insert(x + 1, y) // 右
+                insert(x, y + 1) // 下
+                insert(x - 1, y) // 左
+            }
+            return false
+        }
+    </script>
+</body>
+
+</html>
