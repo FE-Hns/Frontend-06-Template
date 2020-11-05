@@ -14,6 +14,9 @@
             line-height: 8px;
             flex: 1 0 auto;
         }
+        .cell:nth-child(5050) {
+            background-color: red;
+        }
         #container {
             width: 801px;
             display: flex;
@@ -76,9 +79,14 @@
         // 阻止右键默认行为
         document.addEventListener("contextmenu", (e) => e.preventDefault())
 
+        // 保存地图
+        saveBtn.addEventListener("click",(e) => {
+            window.localStorage.setItem("map",JSON.stringify(map))
+        })
+
         // 延迟函数
         function sleep(duration) {
-            return new Promise((resolve,reject) => {
+            return new Promise((resolve, reject) => {
                 setTimeout(resolve, duration);
             })
         }
@@ -90,30 +98,37 @@
         // 然后以此类推
 
         // 那么如何才能找到到达终点的路径呢？
-        async function path(map, start, end) {
+        // 记录上一个点
+        async function findPath(map, start, end) {
             // 核心队列
             let queue = [start]
+            let table = Object.create(map)
 
             // 在插入点的过程中
             // 有几点需要考虑
             // 是否到了边界
             // 要插入的点是不是墙
             // 已经插入的点
-            async function insert(x, y) {
+            async function insert(x, y, pre) {
                 // 边界问题
                 if (x < 0 || x >= 100 || y < 0 || y >= 100) {
                     return;
                 }
                 // 墙和插入的点，在map上不为0
-                if (map[y*100 + x]) {
+                // if (map[y*100 + x]) {
+                //     return;
+                // }
+                if (table[y * 100 + x]) {
                     return;
                 }
                 // 给寻路的过程上颜色
-                container.children[y*100 + x].style.backgroundColor = "lightgreen"
+                container.children[y * 100 + x].style.backgroundColor = "lightgreen"
                 // 打标记
-                map[y*100 + x] = 2
+                // map[y*100 + x] = 2
+                // 将上一个点记录到table中 不再去改变原有数据结构
+                table[y * 100 + x] = pre
                 // 满足条件的点，就可以推入到队列中
-                queue.push([x,y])
+                queue.push([x, y])
             }
 
             // 遍历队列
@@ -121,15 +136,31 @@
                 let [x, y] = queue.shift()
                 // 判断是否到了终点
                 if (x == end[0] && y == end[1]) {
-                    return true
+                    // 如果到达终点之后，开始从后往前找之前的点
+                    let path = []
+                    while (x != start[0] || y != start[1]) {
+                        // path中放入的是原数组中的坐标
+                        path.push(map[y * 100 + x]);
+                        [x, y] = table[y * 100 + x];
+                        await sleep(10)
+                        container.children[y * 100 + x].style.backgroundColor = "blue";
+                    }
+                    // return true;
+                    return path;
                 }
                 // 插入周围的点
-                insert(x, y - 1) // 上
-                insert(x + 1, y) // 右
-                insert(x, y + 1) // 下
-                insert(x - 1, y) // 左
+                await insert(x, y - 1, [x, y]) // 上
+                await insert(x + 1, y, [x, y]) // 右
+                await insert(x, y + 1, [x, y]) // 下
+                await insert(x - 1, y, [x, y]) // 左
+
+                // 对角的四个点
+                await insert(x - 1, y - 1, [x, y])
+                await insert(x + 1, y - 1, [x, y])
+                await insert(x - 1, y + 1, [x, y])
+                await insert(x + 1, y + 1, [x, y])
             }
-            return false
+            return null
         }
     </script>
 </body>
