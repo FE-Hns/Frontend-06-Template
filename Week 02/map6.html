@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>map6</title>
+    <style>
+        .cell {
+            width: 6px;
+            height: 6px;
+            border: 1px solid #fff;
+            background-color: gray;
+            line-height: 8px;
+            flex: 1 0 auto;
+            user-select: none;
+        }
+
+        .cell:nth-child(5050) {
+            background-color: red;
+        }
+
+        #container {
+            width: 801px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <button id="save">保存</button>
+    <script>
+        let container = document.getElementById("container")
+        let saveBtn = document.getElementById("save")
+        let mousedown = false
+        let clear = false
+        let map = window.localStorage.getItem("map") ? JSON.parse(window.localStorage.getItem("map")) : Array(10000).fill(0)
+
+        document.addEventListener("mousedown", (e) => {
+            mousedown = true
+            if (e.which == 3) {
+                clear = true
+            }
+        })
+
+        document.addEventListener("mouseup", (e) => {
+            mousedown = false
+            clear = false
+        })
+
+        document.addEventListener("contextmenu", (e) => {
+            e.preventDefault()
+        })
+
+        saveBtn.addEventListener("click", (e) => {
+            window.localStorage.setItem("map",JSON.stringify(map))
+        })
+
+        for (let y = 0; y < 100; y++) {
+            for (let x = 0; x < 100; x++) {
+                let cell = document.createElement("div")
+                cell.classList.add("cell")
+                if (map[y * 100 + x] == 1) {
+                    cell.style.backgroundColor = "black"
+                }
+                cell.addEventListener("mousemove", (e) => {
+                    if (mousedown) {
+                        if (clear) {
+                            cell.style.backgroundColor = ""
+                            map[y * 100 + x] = 0
+                        } else {
+                            cell.style.backgroundColor = "black"
+                            map[y * 100 + x] = 1
+                        }
+                    }
+                })
+                container.appendChild(cell)
+            }
+        }
+
+        function sleep(duration) {
+            return new Promise((resolve, reject) => {
+                setTimeout(resolve, duration)
+            })
+        }
+
+        // 定义一种数据结构
+        // 要求入参为数组
+        // 每次取出最小的值
+        // 可以插入数据
+
+        class SortData {
+            constructor(data, compare) {
+                this.data = data.slice()
+                this.compare = compare || ((a, b) => a - b)
+            }
+            take() {
+                if (!this.data.length) {
+                    return;
+                }
+                let minNum = this.data[0]
+                let minIndex = 0
+                for (let i = 1; i < this.data.length; i++) {
+                    if (this.compare(this.data[i],minNum) < 0) {
+                        minNum = this.data[i]
+                        minIndex = i
+                    }                    
+                }
+                // 把最后一位的值，赋值给当前最小值的位置
+                // 这样只交换一次，多出一个最后一位的值，所以需要pop掉
+                this.data[minIndex] = this.data[this.data.length - 1]
+                this.data.pop()
+                return minNum;
+            }
+            give(v) {
+                this.data.push(v)
+            }
+            get length() {
+                return this.data.length;
+            }
+        }
+
+        function distance(point,end) {
+            // 利用三角函数原理，求距离，但省了开根号那一步
+            return (point[0] - end[0]) ** 2 + (point[1] - end[1]) ** 2;
+        }
+
+        function compare(a,b) {
+            return distance(a,end) - distance(b,end);
+        }
+
+        async function findPath(map, start, end) {
+            // 广度搜索核心，队列
+            // 将起始点坐标放入队列中
+            // let queue = [start]
+            // 利用新创建的sortData类，来接管queue
+            let queue = new SortData([start],(a,b) => distance(a,end) - distance(b,end))
+            // 复制一份
+            let table = Object.create(map)
+
+            // 插入点判断
+            // 是否是边界
+            // 是否有墙
+            // 是否走过了
+            async function insert(x, y, pre) {
+                // 不是从1算起，所以100是临界点 等于100就已经出格
+                // 边界判断
+                if (x < 0 || x >= 100 || y < 0 || y >= 100) {
+                    return;
+                }
+                // 是否是墙以及是否走过
+                if (table[y * 100 + x]) {
+                    return;
+                }
+                // await sleep(10)
+                container.children[y * 100 + x].style.backgroundColor = "lightgreen"
+                // map[y*100 + x] = 2
+                // 把走过的点，存一下
+                table[y * 100 + x] = pre
+                // 如果都满足了，那么插入队列
+                // queue.push([x, y])
+                queue.give([x,y])
+            }
+
+            while (queue.length) {
+                // 每次取出第一个
+                // let [x, y] = queue.shift()
+                let [x,y] = queue.take()
+                // 到达终点了
+                if (x == end[0] && y == end[1]) {
+                    let path = []
+                    // return [x,y]
+                    // 从终点往回找
+                    while (x != start[0] || y != start[1]) {
+                        [x, y] = table[y * 100 + x]
+                        path.push(map[y * 100 + x])
+                        await sleep(10)
+                        container.children[100 * y + x].style.backgroundColor = "blue"
+                    }
+                    return path
+                }
+                // 上下左右
+                await insert(x, y - 1, [x, y])
+                await insert(x, y + 1, [x, y])
+                await insert(x + 1, y, [x, y])
+                await insert(x - 1, y, [x, y])
+
+                // 斜对角
+                await insert(x - 1, y - 1, [x, y])
+                await insert(x + 1, y - 1, [x, y])
+                await insert(x + 1, y + 1, [x, y])
+                await insert(x - 1, y + 1, [x, y])
+            }
+            return null
+        }
+    </script>
+</body>
+
+</html>
