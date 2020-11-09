@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>使用LL算法构建AST|正则表达式</title>
+</head>
+
+<body>
+    <script>
+        // 创建一个正则分别匹配 数字 空格制表符（tab） 换行符 加 减 乘 除
+        let r = /([0-9\.]+)|([ \t]+)|([\r\n]+)|(\+)|(\-)|(\*)|(\/)/g
+        // 匹配字典
+        let dictionary = ["Number", "Whitespace", "LineTerminator", "+", "-", "*", "/"]
+        
+        function tokenize(source) {
+            let result = null
+            while (true) {
+                // 利用exec匹配参数
+                // 如果最终没匹配到会返回null，此时循环结束
+                result = r.exec(source)
+                if (!result) {
+                    break
+                }
+                // 遍历
+                // result的第一个结果存放的是匹配到的，后边依次放着捕获到的
+                for (let i = 1; i <= dictionary.length; i++) {
+                    if (result[i]) {
+                        console.log(dictionary[i - 1])
+                    }                    
+                }
+                console.log(result)
+            }
+        }
+        tokenize("1024 + 20 * 25")
+    </script>
+</body>
+
+</html>
