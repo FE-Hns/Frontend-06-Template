@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        let $ = Symbol("$")
+        class Trie {
+            constructor() {
+                this.root = Object.create(null)
+            }
+            insert(word) {
+                let node = this.root
+                for (let item of word) {
+                    if (!node[item]) {
+                        node[item] = Object.create(null)
+                    }
+                    // 指向下一个
+                    node = node[item]
+                }
+                // 此时指向最后一个字母
+                // 在最后一个字母上打上标记来计数
+                if (!($ in node)) {
+                    node[$] = 0
+                }
+                node[$]++
+            }
+            most() {
+                let max = null
+                let maxWord = null
+                let visit = (node, word) => {
+                    if (node[$] && node[$] > max) {
+                        max = node[$]
+                        maxWord = word
+                    }
+                    for (const w in node) {
+                        visit(node[w], word + w)
+                    }
+                }
+                visit(this.root, "")
+                console.log(maxWord,max)
+            }
+        }
+
+        // 随机长度字符串
+        function randomWord(length) {
+            let s = "";
+            for (let index = 0; index < length; index++) {
+                s += String.fromCharCode(Math.floor(Math.random() * 26) + "a".charCodeAt(0))
+            }
+            return s;
+        }
+        let trie = new Trie()
+        for (let index = 0; index < 1000; index++) {
+            trie.insert(randomWord(4))            
+        }
+    </script>
+</body>
+
+</html>
