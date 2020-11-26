@@ -1,0 +1,62 @@
+<script>
+    // 被代理的对象
+    let obj = {
+        a: 1,
+        b: 2
+    }
+    // 回调函数map集合
+    let callbacks = new Map()
+    // 存放使用过的响应的集合
+    let usedReactivities = []
+    // 监听函数
+    function effect(callback) {
+        usedReactivities = []
+        // 这一步执行effect函数中的箭头函数
+        callback()
+        console.log(usedReactivities)
+        // 解构赋值，获取变量
+        const [obj, prop] = usedReactivities[0]
+        console.log(obj,prop)
+        // 先看第一层map是否有值存在
+        // 没有的话，给obj => 映射一个map
+        if (!callbacks.has(obj)) {
+            callbacks.set(obj, new Map())
+        }
+        // 接下来再看第二层map是否有值存在
+        // 如果第二层map不存在，就映射一个数组
+        if (!callbacks.get(obj).has(prop)) {
+            callbacks.get(obj).set(prop, [])
+        }
+        // 如果找到对应的obj且对应的属性，就把callback函数push到数组中
+        callbacks.get(obj).get(prop).push(callback)
+    }
+
+    function reactive(obj) {
+        return new Proxy(obj, {
+            set(obj, prop, val) {
+                obj[prop] = val
+                if (callbacks.has(obj)) {
+                    if (callbacks.get(obj).has(prop)) {
+                        for (const callback of callbacks.get(obj).get(prop)) {
+                            callback()
+                        }
+                    }
+
+                }
+                return obj[prop]
+            },
+            get(obj, prop) {
+                // usedReactivities = []
+                usedReactivities.push([obj, prop])
+                return obj[prop]
+            }
+        })
+    }
+
+    let po = reactive(obj)
+    // 调用effect函数，监听属性a
+    // 之后再次改变po中a属性的值，就会触发set中callbacks中对于a属性监听的回调函数
+    effect(() => {
+        console.log(po.a)
+    })
+</script>

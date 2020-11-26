@@ -1,0 +1,33 @@
+<script>
+    let obj = {
+        a: 1,
+        b: 2
+    }
+
+    let callbacks = []
+
+    function effect(callback) {
+        callbacks.push(callback)
+    }
+
+    function reactive(obj) {
+        return new Proxy(obj, {
+            set(obj, prop, val) {
+                obj[prop] = val
+                for (const callback of callbacks) {
+                    callback()
+                }
+                return obj[prop]
+            },
+            get(obj, prop) {
+                return obj[prop]
+            }
+        })
+    }
+
+    let po = reactive(obj)
+
+    effect(() => {
+        console.log(po.a,'effect 触发')
+    })
+</script>
