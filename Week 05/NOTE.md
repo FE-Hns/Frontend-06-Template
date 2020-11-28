@@ -169,4 +169,105 @@ effect(() => {
 })
 ```
 
+## 第五课
 
+如果是对象嵌套的情况，那么上述代码将无法做到更深层次的监听。
+所以
+1. 我们先是想到利用递归的方式，在get的时候，判断如果监听的是一个对象，我们就把该对象利用递归的方式继续reactive
+2. 但最终返回的proxy需要作进一步的判断了，因为得把之前代理的存一份
+3. 相应的effect函数也需要做修改
+
+吐槽一点，winter老师在第五课时候着重讲了get时候判断修改以及需要存储一份proxy，窃以为effect函数没有做修改，其实effect函数也做了相应的修改。好处在于可以让学生自行思考，坏处在于有点浪费时间了，没有表达到位。
+
+```javascript
+// 被代理的对象
+let obj = {
+    a: {
+        b: 3
+    },
+    b: 2
+}
+// 回调函数map集合
+let callbacks = new Map()
+// 存放使用过的响应的集合
+let usedReactivities = []
+// 存储一下reactive函数创建的创建的状态
+let reactivities = new Map()
+// 监听函数
+function effect(callback) {
+    usedReactivities = []
+    // 这一步执行effect函数中的箭头函数
+    callback()
+    // console.log(usedReactivities)
+    // // 解构赋值，获取变量
+    // const [obj, prop] = usedReactivities[0]
+    // // console.log(obj, prop)
+    // // 先看第一层map是否有值存在
+    // // 没有的话，给obj => 映射一个map
+    // if (!callbacks.has(obj)) {
+    //     callbacks.set(obj, new Map())
+    // }
+    // // 接下来再看第二层map是否有值存在
+    // // 如果第二层map不存在，就映射一个数组
+    // if (!callbacks.get(obj).has(prop)) {
+    //     callbacks.get(obj).set(prop, [])
+    // }
+    // // 如果找到对应的obj且对应的属性，就把callback函数push到数组中
+    // callbacks.get(obj).get(prop).push(callback)
+
+    
+    console.log(usedReactivities)
+
+    for (const reactivity of usedReactivities) {
+        const [obj, prop] = reactivity
+        if (!callbacks.has(obj)) {
+            callbacks.set(obj, new Map())
+        }
+        if (!callbacks.get(obj).has(prop)) {
+            callbacks.get(obj).set(prop, [])
+        }
+        callbacks.get(obj).get(prop).push(callback)
+    }
+}
+
+function reactive(obj) {
+    if (reactivities.has(obj)) {
+        return reactivities.get(obj)
+    }
+    let proxy = new Proxy(obj, {
+        set(obj, prop, val) {
+            obj[prop] = val
+            console.log(obj)
+            if (callbacks.has(obj)) {
+                console.log(123)
+                if (callbacks.get(obj).has(prop)) {
+                    for (const callback of callbacks.get(obj).get(prop)) {
+                        console.log(1111)
+                        callback()
+                    }
+                }
+
+            }
+            return obj[prop]
+        },
+        get(obj, prop) {
+            // usedReactivities = []
+            usedReactivities.push([obj, prop])
+            if (typeof obj[prop] === "object") {
+                return reactive(obj[prop])
+            }
+            return obj[prop]
+        }
+    })
+
+    reactivities.set(obj, proxy)
+    return proxy
+}
+
+let po = reactive(obj)
+// 调用effect函数，监听属性a
+// 之后再次改变po中a属性的值，就会触发set中callbacks中对于a属性监听的回调函数
+effect(() => {
+    console.log(po.a.b)
+})
+```
