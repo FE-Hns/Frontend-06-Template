@@ -271,3 +271,280 @@ effect(() => {
     console.log(po.a.b)
 })
 ```
+
+## 第六课
+
+本节课通过input实现简单的双向绑定，然后将绑定的值回显到dom结构中。每次都需要触发effect函数，最后一步起初忘了在effect函数中去触发更新dom的background导致失效。
+
+```html
+<input type="range" id="r" min="1" max="255">
+<input type="range" id="g" min="1" max="255">
+<input type="range" id="b" min="1" max="255">
+
+<div style="width:400px;height:400px;" id="color"></div>
+
+<script>
+    // 被代理的对象
+    let obj = {
+        r: 1,
+        g: 1,
+        b: 1
+    }
+    // 回调函数map集合
+    let callbacks = new Map()
+    // 存放使用过的响应的集合
+    let usedReactivities = []
+    // 存储一下reactive函数创建的创建的状态
+    let reactivities = new Map()
+    // 监听函数
+    function effect(callback) {
+        usedReactivities = []
+        // 这一步执行effect函数中的箭头函数
+        callback()
+        console.log(usedReactivities)
+
+        for (const reactivity of usedReactivities) {
+            const [obj, prop] = reactivity
+            if (!callbacks.has(obj)) {
+                callbacks.set(obj, new Map())
+            }
+            if (!callbacks.get(obj).has(prop)) {
+                callbacks.get(obj).set(prop, [])
+            }
+            callbacks.get(obj).get(prop).push(callback)
+        }
+    }
+
+    function reactive(obj) {
+        if (reactivities.has(obj)) {
+            return reactivities.get(obj)
+        }
+        let proxy = new Proxy(obj, {
+            set(obj, prop, val) {
+                obj[prop] = val
+                // console.log(obj)
+                if (callbacks.has(obj)) {
+                    // console.log(123)
+                    if (callbacks.get(obj).has(prop)) {
+                        for (const callback of callbacks.get(obj).get(prop)) {
+                            console.log(1111)
+                            callback()
+                        }
+                    }
+
+                }
+                return obj[prop]
+            },
+            get(obj, prop) {
+                // usedReactivities = []
+                usedReactivities.push([obj, prop])
+                if (typeof obj[prop] === "object") {
+                    return reactive(obj[prop])
+                }
+                return obj[prop]
+            }
+        })
+
+        reactivities.set(obj, proxy)
+        return proxy
+    }
+
+    let po = reactive(obj)
+    // 调用effect函数，监听属性a
+    // 之后再次改变po中a属性的值，就会触发set中callbacks中对于a属性监听的回调函数
+
+    effect(() => {
+        // console.log(po.a.b)
+        document.getElementById("r").value = po.r
+    })
+    effect(() => {
+        // console.log(po.a.b)
+        document.getElementById("g").value = po.g
+    })
+    effect(() => {
+        // console.log(po.a.b)
+        document.getElementById("b").value = po.b
+    })
+
+    document.getElementById("r").addEventListener("input", event => {
+        po.r = event.target.value
+    })
+    document.getElementById("g").addEventListener("input", event => {
+        po.g = event.target.value
+    })
+    document.getElementById("b").addEventListener("input", event => {
+        po.b = event.target.value
+    })
+    effect(() => {
+        document.getElementById("color").style.backgroundColor = `rgb(${po.r},${po.g},${po.b})`
+    })
+</script>
+
+```
+## 第七课
+
+拖拽。在最开始接触前端的时候，第一个入门的demo就是拖拽。
+拖拽的核心在于通过事件来获取到鼠标的坐标，将鼠标的坐标值给到拖拽元素的坐标值。其中需要注意的点在于，需要记录一下在mousedown的一瞬间的点位坐标，需要将其去掉，不然每次都会回到元素的起点。
+
+```html
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div id="dragble" style="width: 100px;height: 100px;background-color: palevioletred;position: absolute;"></div>
+<script>
+    let dragble = document.getElementById("dragble")
+    let baseX = 0, baseY = 0;
+    // mousedown事件放在元素上监听
+    dragble.addEventListener("mousedown",function (event) {
+        let startX = event.clientX, startY = event.clientY;
+        // mouseup回调函数
+        // mouseup函数只用来去掉监听
+        let upHandler = () => {
+            baseX = baseX + event.clientX - startX;
+            baseY = baseY + event.clientY - startY;
+            document.removeEventListener("mousemove",moveHandler)
+            document.removeEventListener("mouseup",upHandler)
+        }
+        // mousemove回调函数
+        let moveHandler = (event) => {
+            // console.log(event)
+            // dragble.style.transform = `translate(${baseX + event.clientX - startX}px, ${baseY + event.clientY - startY}px)`
+            dragble.style.left = `${baseX + event.clientX - startX}px`
+            dragble.style.top = `${baseY + event.clientY - startY}px`
+        }
+
+        document.addEventListener("mousemove",moveHandler)
+        document.addEventListener("mouseup",upHandler)
+    })
+</script>
+</body>
+</html>
+```
+
+
+## 第八课
+
+今天的这节课，恰好是我使用的比较少的CSSROM这部分。其中有几个比较有意思的api需要我好好的了解一下
+
+
+### document.createRange()
+
+Range对象代表页面上一段连续的区域，通过Range对象可以获取或者修改页面上任何区域的内容。也可以通过Range的方法进行复制和移动页面任何区域的元素。
+
+
+### range.setStart(startNode, startoffset)
+
+Range.setStart() 方法用于设置 Range的开始位置。
+
+如果起始节点类型是 Text， Comment, or CDATASection之一, 那么 startOffset指的是从起始节点算起字符的偏移量。 对于其他 Node 类型节点， startOffset 是指从起始结点开始算起子节点的偏移量。
+
+
+### range.setEnd(endNode, endoffset)
+
+Range.setEnd()方法用于设置 Range的结束位置。
+
+如果结束节点类型是 Text， Comment, or CDATASection之一, 那么 endOffset指的是从结束节点算起字符的偏移量。 对于其他 Node 类型节点， endOffset是指从结束结点开始算起子节点的偏移量。
+
+原理，将所有的节点塞入到range对象里，并且设置一个求距离最小的方法，于是每次移动鼠标都可以找到最小的range，利用range.insertNode将拖拽的元素插入到range里。
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="container">
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+        文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字文字
+    </div>
+    <div id="dragble" style="display:inline-block;width: 100px;height: 100px;background-color: palevioletred;"></div>
+<script>
+    let dragble = document.getElementById("dragble")
+    let baseX = 0, baseY = 0;
+    // mousedown事件放在元素上监听
+    dragble.addEventListener("mousedown",function (event) {
+        let startX = event.clientX, startY = event.clientY;
+        // mouseup回调函数
+        // mouseup函数只用来去掉监听
+        let upHandler = () => {
+            baseX = baseX + event.clientX - startX;
+            baseY = baseY + event.clientY - startY;
+            document.removeEventListener("mousemove",moveHandler)
+            document.removeEventListener("mouseup",upHandler)
+        }
+        // mousemove回调函数
+        let moveHandler = (event) => {
+            // dragble.style.transform = `translate(${baseX + event.clientX - startX}px, ${baseY + event.clientY - startY}px)`
+            let range = getNearest(event.clientX, event.clientY)
+            range.insertNode(dragble)
+        }
+        document.addEventListener("mousemove",moveHandler)
+        document.addEventListener("mouseup",upHandler)
+    })
+
+    let ranges = [];
+    let container = document.getElementById("container");
+    for (let i = 0; i < container.childNodes[0].textContent.length; i++) {
+        let range = document.createRange()        
+        range.setStart(container.childNodes[0], i)
+        range.setEnd(container.childNodes[0], i)
+
+        console.log(range.getBoundingClientRect())
+
+        ranges.push(range)
+    }
+
+
+    function getNearest(x,y) {
+        let min = Infinity
+        let nearest = null
+
+        for (const range of ranges) {
+            let rect = range.getBoundingClientRect()
+            // 勾股定理求距离
+            let distance = (rect.x - x) ** 2 + (rect.y - y) ** 2
+            if (distance < min) {
+                min = distance
+                nearest = range
+            }
+        }
+        
+        return nearest
+    }
+
+    document.addEventListener("selectstart",e => e.preventDefault())
+</script>
+</body>
+</html>
+
+```
